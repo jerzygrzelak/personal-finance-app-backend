@@ -1,0 +1,171 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  username     String        @unique
+  email        String        @unique
+  password     String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  accounts     Account[]
+  assets       Asset[]
+  trips        Trip[]
+  transactions Transaction[]
+  exchanges    Exchange[]
+}
+
+model Currency {
+  id              Int              @id @default(autoincrement())
+  symbol          String
+  code            String
+  name            String
+  namePlural      String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  accountBalances AccountBalance[]
+  assets          Asset[]
+  transactions    Transaction[]
+  currenciesTo    Exchange[]       @relation("currencyFrom")
+  currenciesFrom  Exchange[]       @relation("currencyTo")
+}
+
+model Account {
+  id              Int              @id @default(autoincrement())
+  name            String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  accountBalances AccountBalance[]
+  transactions    Transaction[]
+  exchanges       Exchange[]
+  user            User             @relation(fields: [userId], references: [id])
+  userId          Int
+}
+
+model AccountBalance {
+  id         Int      @id @default(autoincrement())
+  account    Account  @relation(fields: [accountId], references: [id])
+  accountId  Int
+  currency   Currency @relation(fields: [currencyId], references: [id])
+  currencyId Int
+  balance    Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Asset {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  amount      Float
+  currency    Currency @relation(fields: [currencyId], references: [id])
+  currencyId  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
+  userId      Int
+}
+
+model TransactionCategory {
+  id            Int                      @id @default(autoincrement())
+  name          String
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  subcategories TransactionSubcategory[]
+  transactions  Transaction[]
+}
+
+model TransactionSubcategory {
+  id         Int                 @id @default(autoincrement())
+  name       String
+  category   TransactionCategory @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+}
+
+model Trip {
+  id           Int           @id @default(autoincrement())
+  name         String
+  startDate    DateTime
+  endDate      DateTime
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  tripPlaces   TripPlace[]
+  transactions Transaction[]
+  user         User          @relation(fields: [userId], references: [id])
+  userId       Int
+}
+
+model TripPlace {
+  id           Int           @id @default(autoincrement())
+  name         String
+  trip         Trip          @relation(fields: [tripId], references: [id])
+  tripId       Int
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+}
+
+model Transaction {
+  id                    Int                 @id @default(autoincrement())
+  name                  String
+  date                  DateTime
+  amount                Float
+  account               Account             @relation(fields: [accountId], references: [id])
+  accountId             Int
+  currency              Currency            @relation(fields: [currencyId], references: [id])
+  currencyId            Int
+  transactionType       TransactionType
+  transactionCategory   TransactionCategory @relation(fields: [transactionCategoryId], references: [id])
+  transactionCategoryId Int
+  trip                  Trip                @relation(fields: [tripId], references: [id])
+  tripId                Int
+  tripPlace             TripPlace           @relation(fields: [tripPlaceId], references: [id])
+  tripPlaceId           Int
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  user                  User                @relation(fields: [userId], references: [id])
+  userId                Int
+}
+
+model Exchange {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  date               DateTime
+  currencyFromAmount Float
+  currencyToAmount   Float
+  rate               Float
+  account            Account  @relation(fields: [accountId], references: [id])
+  accountId          Int
+  currencyFrom       Currency @relation("currencyFrom", fields: [currencyFromId], references: [id])
+  currencyFromId     Int
+  currencyTo         Currency @relation("currencyTo", fields: [currencyToId], references: [id])
+  currencyToId       Int
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id])
+  userId             Int
+}
+
+enum TransactionType {
+  ExternalTransfer
+  InternalTransfer
+  Income
+  Expense
+  LoanDisbursement
+  LoanReceipt
+}
+
+// id         Int      @id @default(autoincrement())
+// createdAt  DateTime @default(now())
+// updatedAt  DateTime @updatedAt
